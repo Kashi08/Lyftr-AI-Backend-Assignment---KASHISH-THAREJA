@@ -1,34 +1,36 @@
 # Lyftr-AI-Backend-Assignment---KASHISH-THAREJA
 Webhook Ingestion API (Lyftr AI Assignment)
-Maine ye project ek robust aur scalable webhook receiver banane ke liye design kiya hai jo SMS data ko securely handle karta hai. Pura setup Dockerized hai taaki "it works on my machine" wali problem na aaye.
+I developed this project to create a robust and scalable webhook receiver that securely handles SMS data. The entire system is Dockerized to ensure environment consistency and ease of deployment.
 
-Design Decisions & Logic
-Idempotency (Duplicate Handling): Database level par message_id ko Primary Key rakha hai. Isse agar same webhook dobara aata hai, toh server 200 OK return karega par data duplicate nahi hoga.
+🧠 Design Decisions & Logic
+Idempotency (Duplicate Handling): I used the message_id as the Primary Key in the SQLite database. This ensures that if the same webhook is triggered multiple times, the server returns a 200 OK but doesn't create duplicate entries in the database.
 
-Security (HMAC): API har request ka X-Signature header check karti hai. Maine HMAC-SHA256 use kiya hai raw body aur WEBHOOK_SECRET ke saath taaki sirf authorized sources hi data bhej sakein.
+Security (HMAC): Every request to the /webhook endpoint is validated using an X-Signature header. I implemented HMAC-SHA256 verification using a WEBHOOK_SECRET and the raw request body to ensure only authorized sources can ingest data.
 
-Pagination & Filters: /messages endpoint par limit aur offset use kiya hai taaki bade datasets load karte waqt server crash na ho. Saath hi, deterministic ordering (ts aur message_id) rakhi hai.
+Pagination & Filters: To keep the API performant, the /messages endpoint supports limit and offset. I also added deterministic ordering (by ts and message_id) and support for filtering by sender or text search.
 
-Persistence: Docker volume (./data:/data) use kiya hai taaki container restart hone par bhi SQLite database ka data save rahe.
+Persistence: I configured a Docker volume (./data:/data) to ensure that the SQLite database remains intact even if the container is restarted or rebuilt.
 
-How to Run
+Observability: I included both /health/live and /health/ready probes. The readiness probe specifically checks for the existence of the WEBHOOK_SECRET and a successful database connection before marking the service as ready.
+
+🛠️ How to Run
 Build and Start:
 
 Bash
 docker-compose up --build
 Access API:
 
-API running at: http://localhost:8000
+Base URL: http://localhost:8000
 
-Interactive Docs (Swagger): http://localhost:8000/docs
+Interactive Swagger Docs: http://localhost:8000/docs
 
-Endpoints
-POST /webhook: Securely ingests SMS data.
+📊 Endpoints
+POST /webhook: Securely ingests SMS data with signature validation.
 
-GET /messages: Paginated list of all received messages.
+GET /messages: Paginated retrieval of messages with search filters.
 
-GET /stats: Real-time analytics (Total messages, top senders, etc.).
+GET /stats: Real-time analytics, including total counts and top 10 senders.
 
-GET /health/live: Liveness probe for monitoring.
+GET /health/live: Basic liveness check.
 
-GET /health/ready: Readiness probe (Checks DB & Secret).
+GET /health/ready: Readiness check ensuring DB and Environment are properly configured.
